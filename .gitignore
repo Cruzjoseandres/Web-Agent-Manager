@@ -1,0 +1,17 @@
+# Versiones portables de WebAgent descargadas/extraídas localmente (300+ MB de binarios TOTVS)
+versions/
+
+# Configuración local de clientes con IPs de red
+config/clientes.json
+
+# Archivos de depuración y logs
+*.log
+crash.log
+*.tmp
+
+# Archivos temporales de compilación o del sistema
+*.user
+.vs/
+bin/
+obj/
+Thumbs.db

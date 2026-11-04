@@ -1,0 +1,3 @@
+@echo off
+start "" powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -STA -File "%~dp0src\WebAgentManager.ps1"
+

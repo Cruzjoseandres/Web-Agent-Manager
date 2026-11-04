@@ -1,0 +1,18 @@
+[
+  {
+    "Id": "ejemplo-cliente",
+    "Name": "Cliente Demo",
+    "Description": "Servidor de Ejemplo",
+    "Environments": [
+      {
+        "Id": "demo-prod",
+        "Name": "Producción",
+        "ServerIp": "https://10.0.0.10:30008/webapp/",
+        "AgentPort": "10241",
+        "VersionFolder": "web-agent-1.1.1-x64",
+        "Description": "Servidor de Producción",
+        "IsEnabled": true
+      }
+    ]
+  }
+]
