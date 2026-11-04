@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace WebAgentManagerApp
 {
@@ -59,77 +58,52 @@ namespace WebAgentManagerApp
             return cachedPermExe;
         }
 
+        public static string Resolve7zExe(string toolsDir)
+        {
+            string[] candidates = new string[]
+            {
+                Path.Combine(toolsDir, "7z.exe"),
+                Path.Combine(GetExeDir(), "tools", "7z.exe"),
+                Path.Combine(GetDataRoot(), "tools", "7z.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "7-Zip", "7z.exe")
+            };
+
+            foreach (var path in candidates)
+            {
+                if (!string.IsNullOrEmpty(path) && File.Exists(path)) return path;
+            }
+            return null;
+        }
+
         public static void EnsureEmbeddedTools(string toolsDir)
         {
             if (!Directory.Exists(toolsDir))
             {
                 try { Directory.CreateDirectory(toolsDir); } catch { }
             }
-            EnsureToolFile(toolsDir, "7z.exe");
-            EnsureToolFile(toolsDir, "7z.dll");
-        }
 
-        private static void EnsureToolFile(string toolsDir, string fileName)
-        {
-            string targetPath = Path.Combine(toolsDir, fileName);
-            if (File.Exists(targetPath)) return;
+            string targetExe = Path.Combine(toolsDir, "7z.exe");
+            string targetDll = Path.Combine(toolsDir, "7z.dll");
 
-            // 1. Si existe en la carpeta local de tools del ejecutable, copiarlo directamente
-            string localSource = Path.Combine(GetExeDir(), "tools", fileName);
-            if (File.Exists(localSource))
+            string localDir = Path.Combine(GetExeDir(), "tools");
+            if (!File.Exists(targetExe))
             {
-                try
+                string srcExe = Path.Combine(localDir, "7z.exe");
+                if (File.Exists(srcExe))
                 {
-                    File.Copy(localSource, targetPath, true);
-                    return;
-                }
-                catch { }
-            }
-
-            // 2. Si no, extraer del recurso empaquetado seguro (.pkg)
-            string pkgResource = fileName + ".pkg";
-            try
-            {
-                Assembly asm = Assembly.GetExecutingAssembly();
-                using (Stream s = asm.GetManifestResourceStream(pkgResource))
-                {
-                    if (s != null)
-                    {
-                        byte[] buffer = new byte[s.Length];
-                        int totalRead = 0;
-                        while (totalRead < buffer.Length)
-                        {
-                            int read = s.Read(buffer, totalRead, buffer.Length - totalRead);
-                            if (read <= 0) break;
-                            totalRead += read;
-                        }
-                        for (int i = 0; i < buffer.Length; i++)
-                        {
-                            buffer[i] ^= 0x42;
-                        }
-                        File.WriteAllBytes(targetPath, buffer);
-                        return;
-                    }
+                    try { File.Copy(srcExe, targetExe, true); } catch { }
                 }
             }
-            catch { }
 
-            // 3. Fallback a recurso sin máscara si existiera
-            try
+            if (!File.Exists(targetDll))
             {
-                Assembly asm = Assembly.GetExecutingAssembly();
-                using (Stream s = asm.GetManifestResourceStream(fileName))
+                string srcDll = Path.Combine(localDir, "7z.dll");
+                if (File.Exists(srcDll))
                 {
-                    if (s != null)
-                    {
-                        using (FileStream fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
-                        {
-                            s.CopyTo(fs);
-                        }
-                    }
+                    try { File.Copy(srcDll, targetDll, true); } catch { }
                 }
             }
-            catch { }
         }
     }
 }

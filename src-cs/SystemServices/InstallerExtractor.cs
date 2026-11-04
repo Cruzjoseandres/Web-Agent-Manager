@@ -135,8 +135,8 @@ namespace WebAgentManagerApp
         public static bool ExtractInstaller(string toolsDir, string versionsDir, string installerPath, string targetFolderName)
         {
             PathHelper.EnsureEmbeddedTools(toolsDir);
-            string sevenZip = Path.Combine(toolsDir, "7z.exe");
-            if (!File.Exists(sevenZip)) return false;
+            string sevenZip = PathHelper.Resolve7zExe(toolsDir);
+            if (string.IsNullOrEmpty(sevenZip) || !File.Exists(sevenZip)) return false;
 
             string targetDir = Path.Combine(versionsDir, targetFolderName);
             string innerArchiveName = targetFolderName.Contains("x86") ? "app-32.7z" : "app-64.7z";

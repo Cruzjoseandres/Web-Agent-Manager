@@ -1,4 +1,4 @@
-# Compila WebAgentManager.exe (un solo archivo, con herramientas empaquetadas de forma segura y metadatos de versión).
+# Compila WebAgentManager.exe (aplicación WPF ligera y limpia con metadatos oficiales y sin payloads de alta entropía).
 # Usa solo rutas relativas a esta carpeta y el compilador de .NET Framework 4.x incluido en Windows.
 $ErrorActionPreference = "Stop"
 $root   = $PSScriptRoot
@@ -7,25 +7,14 @@ $csc    = Join-Path $fwDir "csc.exe"
 $wpfDir = Join-Path $fwDir "WPF"
 $srcDir = Join-Path $root "src-cs"
 $out    = Join-Path $root "WebAgentManager.exe"
-$z7exe  = Join-Path $root "tools\7z.exe"
-$z7dll  = Join-Path $root "tools\7z.dll"
 $icon   = Join-Path $root "app.ico"
 
-foreach ($f in @($csc, $srcDir, $z7exe, $z7dll, $icon)) {
+# Limpieza de paquetes temporales si existieran
+Get-ChildItem -Path (Join-Path $root "tools") -Filter "*.pkg" -ErrorAction SilentlyContinue | Remove-Item -Force
+
+foreach ($f in @($csc, $srcDir, $icon)) {
     if (-not (Test-Path $f)) { throw "No se encontró: $f" }
 }
-
-# Empaquetar herramientas con máscara segura (evita falsos positivos de antivirus por detección de ejecutables PE embebidos en crudo)
-$pkgExe = Join-Path $root "tools\7z.exe.pkg"
-$pkgDll = Join-Path $root "tools\7z.dll.pkg"
-
-$rawExe = [System.IO.File]::ReadAllBytes($z7exe)
-for ($i = 0; $i -lt $rawExe.Length; $i++) { $rawExe[$i] = $rawExe[$i] -bxor 0x42 }
-[System.IO.File]::WriteAllBytes($pkgExe, $rawExe)
-
-$rawDll = [System.IO.File]::ReadAllBytes($z7dll)
-for ($i = 0; $i -lt $rawDll.Length; $i++) { $rawDll[$i] = $rawDll[$i] -bxor 0x42 }
-[System.IO.File]::WriteAllBytes($pkgDll, $rawDll)
 
 $csFiles = Get-ChildItem -Path $srcDir -Filter "*.cs" -Recurse | Select-Object -ExpandProperty FullName
 
@@ -35,8 +24,6 @@ $csFiles = Get-ChildItem -Path $srcDir -Filter "*.cs" -Recurse | Select-Object -
     /r:"$wpfDir\WindowsBase.dll" `
     /r:"System.Xaml.dll" `
     /r:"System.Web.Extensions.dll" `
-    /res:"$pkgExe,7z.exe.pkg" `
-    /res:"$pkgDll,7z.dll.pkg" `
     /res:"$icon,app.ico" `
     $csFiles
 
