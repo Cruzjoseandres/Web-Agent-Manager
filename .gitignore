@@ -19,3 +19,6 @@ Thumbs.db
 
 # Engram memory
 .engram/
+
+# Paquetes de herramientas intermedias
+tools/*.pkg

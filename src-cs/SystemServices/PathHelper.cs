@@ -65,17 +65,60 @@ namespace WebAgentManagerApp
             {
                 try { Directory.CreateDirectory(toolsDir); } catch { }
             }
-            ExtractResourceIfMissing("7z.exe", Path.Combine(toolsDir, "7z.exe"));
-            ExtractResourceIfMissing("7z.dll", Path.Combine(toolsDir, "7z.dll"));
+            EnsureToolFile(toolsDir, "7z.exe");
+            EnsureToolFile(toolsDir, "7z.dll");
         }
 
-        private static void ExtractResourceIfMissing(string resourceName, string targetPath)
+        private static void EnsureToolFile(string toolsDir, string fileName)
         {
+            string targetPath = Path.Combine(toolsDir, fileName);
             if (File.Exists(targetPath)) return;
+
+            // 1. Si existe en la carpeta local de tools del ejecutable, copiarlo directamente
+            string localSource = Path.Combine(GetExeDir(), "tools", fileName);
+            if (File.Exists(localSource))
+            {
+                try
+                {
+                    File.Copy(localSource, targetPath, true);
+                    return;
+                }
+                catch { }
+            }
+
+            // 2. Si no, extraer del recurso empaquetado seguro (.pkg)
+            string pkgResource = fileName + ".pkg";
             try
             {
                 Assembly asm = Assembly.GetExecutingAssembly();
-                using (Stream s = asm.GetManifestResourceStream(resourceName))
+                using (Stream s = asm.GetManifestResourceStream(pkgResource))
+                {
+                    if (s != null)
+                    {
+                        byte[] buffer = new byte[s.Length];
+                        int totalRead = 0;
+                        while (totalRead < buffer.Length)
+                        {
+                            int read = s.Read(buffer, totalRead, buffer.Length - totalRead);
+                            if (read <= 0) break;
+                            totalRead += read;
+                        }
+                        for (int i = 0; i < buffer.Length; i++)
+                        {
+                            buffer[i] ^= 0x42;
+                        }
+                        File.WriteAllBytes(targetPath, buffer);
+                        return;
+                    }
+                }
+            }
+            catch { }
+
+            // 3. Fallback a recurso sin máscara si existiera
+            try
+            {
+                Assembly asm = Assembly.GetExecutingAssembly();
+                using (Stream s = asm.GetManifestResourceStream(fileName))
                 {
                     if (s != null)
                     {
