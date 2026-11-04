@@ -5,16 +5,17 @@ $root   = $PSScriptRoot
 $fwDir  = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
 $csc    = Join-Path $fwDir "csc.exe"
 $wpfDir = Join-Path $fwDir "WPF"
-$src    = Join-Path $root "src-cs\Program.cs"
+$srcDir = Join-Path $root "src-cs"
 $out    = Join-Path $root "WebAgentManager.exe"
 $z7exe  = Join-Path $root "tools\7z.exe"
 $z7dll  = Join-Path $root "tools\7z.dll"
-
 $icon   = Join-Path $root "app.ico"
 
-foreach ($f in @($csc, $src, $z7exe, $z7dll, $icon)) {
+foreach ($f in @($csc, $srcDir, $z7exe, $z7dll, $icon)) {
     if (-not (Test-Path $f)) { throw "No se encontró: $f" }
 }
+
+$csFiles = Get-ChildItem -Path $srcDir -Filter "*.cs" -Recurse | Select-Object -ExpandProperty FullName
 
 & $csc /nologo /target:winexe /codepage:65001 /win32icon:"$icon" /out:$out `
     /r:"$wpfDir\PresentationFramework.dll" `
@@ -25,8 +26,7 @@ foreach ($f in @($csc, $src, $z7exe, $z7dll, $icon)) {
     /res:"$z7exe,7z.exe" `
     /res:"$z7dll,7z.dll" `
     /res:"$icon,app.ico" `
-    $src
+    $csFiles
 
 if ($LASTEXITCODE -ne 0) { throw "La compilación falló (código $LASTEXITCODE)" }
 Write-Output "OK -> $out"
-
